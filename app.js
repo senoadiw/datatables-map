@@ -12,33 +12,24 @@ $(function() {
   // add locate button
   L.control.locate().addTo(map);
 
-  // add search
-  var searchLayer = function(query, cb) {
-    var d = $.Deferred();
-
-    // [{"loc":[41.57573,13.002411],"title":"black"},{"loc":[41.807149,13.162994],"title":"blue"}
-    //f.properies.XXXX, where XXXX defines what element search will be run on (Nome, in this case)
-    var json = data.features.map(function(f) {
-      return {loc: [f.geometry.coordinates[1], f.geometry.coordinates[0]], title: f.properties.Nome}
-    });
-
-    // return d.resolve(json)
-    json = json.filter(function(result) {
-      return RegExp(query.toLowerCase()).test(result.title.toLowerCase())
-    });
-    cb(json);
-  };
-  
-  map.addControl( new L.Control.Search({ callData: searchLayer }) );
-
   // gets data to display and automatically codes in geolocation for data display
-  var data;
-  $.getJSON('json/geodata.json').then(function(geoJSON) {
-    data = geoJSON;
+  var markersLayer;
+  $.getJSON('json/geodata.json', function(data) {
     var options = {
       onEachFeature: onEachFeature
-    }
-    L.geoJson(geoJSON, options).addTo(map);
+    };
+    markersLayer = L.geoJson(null, options);
+    markersLayer.addData(data);
+    markersLayer.addTo(map);
+
+    // add search control
+    map.addControl( new L.Control.Search({
+        layer: markersLayer,
+        position: 'topleft',
+        propertyName: 'Nome',
+        marker: false
+      }) 
+    );
   });
 
   // set sidebar
@@ -56,7 +47,7 @@ $(function() {
       sidebar.show();
     }); //ends searchLayer
   }; //onEachFeature
-  
+
   //for hiding the sidebar and showing the "about" div again
   map.on("click",function() {
     sidebar.hide();
